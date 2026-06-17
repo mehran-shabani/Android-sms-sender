@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'screens/contacts_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/import_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/local_db_service.dart';
 
@@ -47,7 +49,12 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   int _index = 0;
-  static const _screens = [DashboardScreen(), SettingsScreen()];
+  static const _screens = [
+    DashboardScreen(),
+    ImportScreen(),
+    ContactsScreen(),
+    SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +65,8 @@ class _RootShellState extends State<RootShell> {
         onDestinationSelected: (value) => setState(() => _index = value),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard), label: 'داشبورد'),
+          NavigationDestination(icon: Icon(Icons.upload_file), label: 'ورود'),
+          NavigationDestination(icon: Icon(Icons.contacts), label: 'مخاطبین'),
           NavigationDestination(icon: Icon(Icons.settings), label: 'تنظیمات'),
         ],
       ),
