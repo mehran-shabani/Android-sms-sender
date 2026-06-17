@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/local_db_service.dart';
+import '../services/send_queue_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,6 +17,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _statsFuture = LocalDbService.instance.getStats();
+    SendQueueService.instance.addListener(_refreshStats);
+  }
+
+  @override
+  void dispose() {
+    SendQueueService.instance.removeListener(_refreshStats);
+    super.dispose();
+  }
+
+  void _refreshStats() {
+    if (mounted) setState(() => _statsFuture = LocalDbService.instance.getStats());
   }
 
   @override
@@ -30,9 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           return RefreshIndicator(
-            onRefresh: () async => setState(() {
-              _statsFuture = LocalDbService.instance.getStats();
-            }),
+            onRefresh: () async => _refreshStats(),
             child: GridView.count(
               padding: const EdgeInsets.all(16),
               crossAxisCount: MediaQuery.sizeOf(context).width > 600 ? 3 : 2,

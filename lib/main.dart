@@ -5,6 +5,7 @@ import 'screens/contacts_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/import_screen.dart';
 import 'screens/preview_screen.dart';
+import 'screens/report_screen.dart';
 import 'screens/send_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/local_db_service.dart';
@@ -57,6 +58,7 @@ class _RootShellState extends State<RootShell> {
     ContactsScreen(),
     PreviewScreen(),
     SendScreen(),
+    ReportScreen(),
     SettingsScreen(),
   ];
 
@@ -73,6 +75,7 @@ class _RootShellState extends State<RootShell> {
           NavigationDestination(icon: Icon(Icons.contacts), label: 'مخاطبین'),
           NavigationDestination(icon: Icon(Icons.preview), label: 'پیش‌نمایش'),
           NavigationDestination(icon: Icon(Icons.send), label: 'ارسال'),
+          NavigationDestination(icon: Icon(Icons.assessment), label: 'گزارش'),
           NavigationDestination(icon: Icon(Icons.settings), label: 'تنظیمات'),
         ],
       ),

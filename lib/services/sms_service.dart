@@ -62,6 +62,18 @@ class SmsSendResult {
 class SmsService {
   SmsService._();
 
+  static String nativeErrorText(PlatformException error) {
+    return switch (error.code) {
+      'INVALID_PHONE' => 'invalid phone',
+      'EMPTY_MESSAGE' => 'empty message',
+      'PERMISSION_DENIED' => 'permission denied',
+      'NO_SMS_FEATURE' => 'device does not support SMS',
+      'NO_DEFAULT_SMS' => 'no SIM if detected',
+      'NATIVE_SEND_FAILURE' => 'native send failure: ${error.message ?? ''}'.trim(),
+      _ => 'unknown error: ${error.message ?? error.code}',
+    };
+  }
+
   static const MethodChannel _channel = MethodChannel('local_sms_sender/sms');
 
   static Future<SmsPermissionState> requestSmsPermission() async {
