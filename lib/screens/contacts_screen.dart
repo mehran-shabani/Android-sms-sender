@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/contact_record.dart';
 import '../services/local_db_service.dart';
+import '../services/send_queue_service.dart';
 import '../widgets/status_badge.dart';
 import 'preview_screen.dart';
 
@@ -25,10 +26,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
     super.initState();
     _contactsFuture = LocalDbService.instance.getAllContacts();
     _searchController.addListener(() => setState(() {}));
+    SendQueueService.instance.addListener(_refresh);
   }
 
   @override
   void dispose() {
+    SendQueueService.instance.removeListener(_refresh);
     _searchController.dispose();
     super.dispose();
   }
