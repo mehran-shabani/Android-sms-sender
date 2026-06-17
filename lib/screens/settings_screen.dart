@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/app_settings.dart';
 import '../services/local_db_service.dart';
+import '../services/sms_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -16,6 +18,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _delayController = TextEditingController();
   bool _skipDuplicates = true;
   bool _skipInvalid = true;
+  int? _selectedSubscriptionId;
+  List<SubscriptionInfo> _subscriptions = [];
   bool _loading = true;
 
   @override
@@ -26,11 +30,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final settings = await LocalDbService.instance.getSettings();
+
+    // Request permission to read phone state for SIM info
+    await Permission.phone.request();
+    final subs = await SmsService.getSubscriptionInfo();
+
     setState(() {
       _templateController.text = settings.smsTemplate;
       _delayController.text = settings.delaySeconds.toString();
       _skipDuplicates = settings.skipDuplicates;
       _skipInvalid = settings.skipInvalid;
+      _selectedSubscriptionId = settings.selectedSubscriptionId;
+      _subscriptions = subs;
       _loading = false;
     });
   }
@@ -43,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         delaySeconds: int.parse(_delayController.text),
         skipDuplicates: _skipDuplicates,
         skipInvalid: _skipInvalid,
+        selectedSubscriptionId: _selectedSubscriptionId,
       ),
     );
     if (!mounted) return;
@@ -110,6 +122,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text('رد کردن شماره‌های نامعتبر'),
                     value: _skipInvalid,
                     onChanged: (value) => setState(() => _skipInvalid = value),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('انتخاب سیم‌کارت',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DropdownButtonFormField<int?>(
+                    value: _selectedSubscriptionId,
+                    decoration: const InputDecoration(
+                      labelText: 'سیم‌کارت پیش‌فرض',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('پیش‌فرض سیستم'),
+                      ),
+                      ..._subscriptions.map((info) => DropdownMenuItem<int?>(
+                            value: info.subscriptionId,
+                            child: Text(
+                                '${info.displayName} (${info.carrierName})'),
+                          )),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _selectedSubscriptionId = value),
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(

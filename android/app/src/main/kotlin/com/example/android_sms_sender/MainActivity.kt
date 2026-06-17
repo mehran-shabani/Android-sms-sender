@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SmsManager
+import android.telephony.SubscriptionManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
@@ -20,6 +21,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
             when (call.method) {
                 "requestSmsCapabilityInfo" -> result.success(requestSmsCapabilityInfo())
+                "getSubscriptionInfo" -> getSubscriptionInfo(result)
                 "sendSms" -> sendSms(call, result)
                 else -> result.notImplemented()
             }
@@ -52,6 +54,34 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun getSubscriptionInfo(result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1) {
+            result.success(emptyList<Map<String, Any?>>())
+            return
+        }
+
+        try {
+            val subscriptionManager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+            if (checkSelfPermissionCompat(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                result.success(emptyList<Map<String, Any?>>())
+                return
+            }
+
+            val infoList = subscriptionManager.activeSubscriptionInfoList
+            val resultList = infoList?.map { info ->
+                mapOf(
+                    "subscriptionId" to info.subscriptionId,
+                    "displayName" to info.displayName.toString(),
+                    "carrierName" to info.carrierName.toString(),
+                    "slotIndex" to info.simSlotIndex
+                )
+            } ?: emptyList()
+            result.success(resultList)
+        } catch (error: Exception) {
+            result.error("SUBSCRIPTION_INFO_ERROR", error.message ?: "Failed to get subscription info", null)
+        }
+    }
+
     private fun sendSms(call: MethodCall, result: MethodChannel.Result) {
         val phone = call.argument<String>("phone")?.trim().orEmpty()
         val message = call.argument<String>("message")?.trim().orEmpty()
@@ -75,18 +105,28 @@ class MainActivity : FlutterActivity() {
             result.error("NO_SMS_FEATURE", "Device does not support SMS.", capability)
             return
         }
-        if (capability["defaultSmsAvailable"] != true) {
-            result.error("NO_DEFAULT_SMS", "No default SmsManager is available. A SIM may be missing or unavailable.", capability)
-            return
-        }
 
         try {
-            val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && subscriptionId != null) {
-                getSystemService(SmsManager::class.java).createForSubscriptionId(subscriptionId)
+            val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val baseSmsManager = getSystemService(SmsManager::class.java)
+                if (subscriptionId != null && subscriptionId != -1) {
+                    baseSmsManager.createForSubscriptionId(subscriptionId)
+                } else {
+                    baseSmsManager
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && subscriptionId != null && subscriptionId != -1) {
+                @Suppress("DEPRECATION")
+                SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
             } else {
                 @Suppress("DEPRECATION")
                 SmsManager.getDefault()
             }
+
+            if (smsManager == null) {
+                result.error("NO_DEFAULT_SMS", "No SmsManager is available.", capability)
+                return
+            }
+
             val sentIntent = PendingIntent.getBroadcast(
                 this,
                 System.currentTimeMillis().toInt(),
