@@ -143,6 +143,20 @@ class ContactRecord {
     );
   }
 
+  String get displayName => fullName.trim().isNotEmpty
+      ? fullName.trim()
+      : '$firstName $lastName'.trim();
+
+  String get displayNameOrPhone {
+    final name = displayName;
+    if (name.isNotEmpty) return name;
+    if (phone.isNotEmpty) return phone;
+    return rawPhone;
+  }
+
+  bool get canBePreparedForSending =>
+      status == ContactStatus.pending || status == ContactStatus.failed;
+
   static DateTime? _dateFromMillis(int? value) =>
       value == null ? null : DateTime.fromMillisecondsSinceEpoch(value);
 }

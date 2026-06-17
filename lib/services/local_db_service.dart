@@ -9,6 +9,7 @@ class LocalDbService {
   static final LocalDbService instance = LocalDbService._();
 
   Database? _db;
+  final Set<int> _selectedContactIds = <int>{};
 
   Future<Database> init() async {
     if (_db != null) return _db!;
@@ -70,6 +71,73 @@ CREATE TABLE app_settings (
     return rows.map(ContactRecord.fromMap).toList();
   }
 
+
+  Set<int> get selectedContactIds => Set.unmodifiable(_selectedContactIds);
+
+  void setContactSelected(int id, bool selected) {
+    if (selected) {
+      _selectedContactIds.add(id);
+    } else {
+      _selectedContactIds.remove(id);
+    }
+  }
+
+  void clearSelectedContacts() => _selectedContactIds.clear();
+
+  Future<List<ContactRecord>> getContactsByIds(Set<int> ids) async {
+    if (ids.isEmpty) return const [];
+    final db = await init();
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final rows = await db.query(
+      'contacts',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids.toList(),
+      orderBy: 'source_row ASC, id ASC',
+    );
+    return rows.map(ContactRecord.fromMap).toList();
+  }
+
+  Future<List<ContactRecord>> getSelectedContacts({
+    bool onlyPendingOrFailed = false,
+  }) async {
+    final contacts = await getContactsByIds(_selectedContactIds);
+    return _filterEligibleContacts(
+      contacts,
+      onlyPendingOrFailed: onlyPendingOrFailed,
+    );
+  }
+
+  Future<List<ContactRecord>> getEligibleContacts({
+    bool onlyPendingOrFailed = true,
+    int? limit,
+  }) async {
+    final contacts = await getAllContacts();
+    final eligible = await _filterEligibleContacts(
+      contacts,
+      onlyPendingOrFailed: onlyPendingOrFailed,
+    );
+    if (limit == null || eligible.length <= limit) return eligible;
+    return eligible.take(limit).toList();
+  }
+
+  Future<List<ContactRecord>> getPendingOrFailedContacts() async {
+    final contacts = await getAllContacts();
+    return contacts.where((contact) => contact.canBePreparedForSending).toList();
+  }
+
+  Future<List<ContactRecord>> _filterEligibleContacts(
+    List<ContactRecord> contacts, {
+    required bool onlyPendingOrFailed,
+  }) async {
+    final settings = await getSettings();
+    return contacts.where((contact) {
+      if (settings.skipInvalid && !contact.isValidPhone) return false;
+      if (settings.skipDuplicates && contact.isDuplicate) return false;
+      if (onlyPendingOrFailed && !contact.canBePreparedForSending) return false;
+      return true;
+    }).toList();
+  }
+
   Future<List<ContactRecord>> getContactsByStatus(ContactStatus status) async {
     final db = await init();
     final rows = await db.query(
@@ -126,11 +194,15 @@ CREATE TABLE app_settings (
         ) ??
         0;
     final valid = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM contacts WHERE is_valid_phone = 1'),
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM contacts WHERE is_valid_phone = 1',
+          ),
         ) ??
         0;
     final invalid = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM contacts WHERE is_valid_phone = 0'),
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM contacts WHERE is_valid_phone = 0',
+          ),
         ) ??
         0;
     final duplicates = Sqflite.firstIntValue(

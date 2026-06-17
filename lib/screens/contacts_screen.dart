@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/contact_record.dart';
 import '../services/local_db_service.dart';
 import '../widgets/status_badge.dart';
+import 'preview_screen.dart';
 
 enum ContactFilter { all, valid, invalid, duplicate, pending, sent, failed }
 
@@ -17,6 +18,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   final _searchController = TextEditingController();
   ContactFilter _filter = ContactFilter.all;
   late Future<List<ContactRecord>> _contactsFuture;
+  final Set<int> _selectedIds = <int>{};
 
   @override
   void initState() {
@@ -63,7 +65,17 @@ class _ContactsScreenState extends State<ContactsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('مخاطبین'),
-        actions: [IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh))],
+        actions: [
+          IconButton(
+            tooltip: 'پیش‌نمایش همه در انتظار',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PreviewScreen()),
+            ),
+            icon: const Icon(Icons.preview),
+          ),
+          IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh)),
+        ],
       ),
       body: Column(
         children: [
@@ -95,6 +107,33 @@ class _ContactsScreenState extends State<ContactsScreen> {
               }).toList(),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(child: Text('انتخاب‌شده: ${_selectedIds.length}')),
+                TextButton(
+                  onPressed: _selectedIds.isEmpty
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const PreviewScreen(selectedOnly: true),
+                            ),
+                          ),
+                  child: const Text('پیش‌نمایش انتخاب‌شده‌ها'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PreviewScreen()),
+                  ),
+                  child: const Text('پیش‌نمایش همه در انتظار'),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: FutureBuilder<List<ContactRecord>>(
               future: _contactsFuture,
@@ -117,18 +156,42 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       final displayName = contact.fullName.trim().isNotEmpty
                           ? contact.fullName
                           : '${contact.firstName} ${contact.lastName}'.trim();
+                      final id = contact.id;
+                      final selected = id != null && _selectedIds.contains(id);
                       return Card(
-                        child: ListTile(
+                        child: CheckboxListTile(
+                          value: selected,
+                          onChanged: id == null
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    if (value ?? false) {
+                                      _selectedIds.add(id);
+                                    } else {
+                                      _selectedIds.remove(id);
+                                    }
+                                    LocalDbService.instance.setContactSelected(
+                                      id,
+                                      value ?? false,
+                                    );
+                                  });
+                                },
                           title: Text(displayName.isEmpty ? 'بدون نام' : displayName),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const SizedBox(height: 4),
-                              Text('شماره: ${contact.phone.isEmpty ? contact.rawPhone : contact.phone}'),
+                              Text(
+                                'شماره: ${contact.phone.isEmpty ? contact.rawPhone : contact.phone}',
+                              ),
                               Text('توکن: ${contact.token}'),
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: StatusBadge(status: contact.status),
+                              ),
                             ],
                           ),
-                          trailing: StatusBadge(status: contact.status),
+                          controlAffinity: ListTileControlAffinity.leading,
                         ),
                       );
                     },
