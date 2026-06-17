@@ -59,6 +59,29 @@ class SmsSendResult {
   }
 }
 
+class SubscriptionInfo {
+  const SubscriptionInfo({
+    required this.subscriptionId,
+    required this.displayName,
+    required this.carrierName,
+    required this.slotIndex,
+  });
+
+  final int subscriptionId;
+  final String displayName;
+  final String carrierName;
+  final int slotIndex;
+
+  factory SubscriptionInfo.fromMap(Map<dynamic, dynamic> map) {
+    return SubscriptionInfo(
+      subscriptionId: map['subscriptionId'] as int,
+      displayName: map['displayName'] as String? ?? 'Unknown',
+      carrierName: map['carrierName'] as String? ?? 'Unknown',
+      slotIndex: map['slotIndex'] as int? ?? -1,
+    );
+  }
+}
+
 class SmsService {
   SmsService._();
 
@@ -86,6 +109,17 @@ class SmsService {
   static Future<SmsCapabilityInfo> requestSmsCapabilityInfo() async {
     final response = await _channel.invokeMapMethod<String, dynamic>('requestSmsCapabilityInfo');
     return SmsCapabilityInfo.fromMap(response ?? const <String, dynamic>{});
+  }
+
+  static Future<List<SubscriptionInfo>> getSubscriptionInfo() async {
+    try {
+      final List<dynamic>? response = await _channel.invokeMethod<List<dynamic>>('getSubscriptionInfo');
+      if (response == null) return [];
+      return response.map((e) => SubscriptionInfo.fromMap(e as Map<dynamic, dynamic>)).toList();
+    } catch (e) {
+      debugPrint('Error getting subscription info: $e');
+      return [];
+    }
   }
 
   static Future<SmsSendResult> sendSms({
