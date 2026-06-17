@@ -4,6 +4,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/contacts_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/import_screen.dart';
+import 'screens/preview_screen.dart';
+import 'screens/send_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/local_db_service.dart';
 
@@ -53,6 +55,8 @@ class _RootShellState extends State<RootShell> {
     DashboardScreen(),
     ImportScreen(),
     ContactsScreen(),
+    PreviewScreen(),
+    SendScreen(),
     SettingsScreen(),
   ];
 
@@ -67,6 +71,8 @@ class _RootShellState extends State<RootShell> {
           NavigationDestination(icon: Icon(Icons.dashboard), label: 'داشبورد'),
           NavigationDestination(icon: Icon(Icons.upload_file), label: 'ورود'),
           NavigationDestination(icon: Icon(Icons.contacts), label: 'مخاطبین'),
+          NavigationDestination(icon: Icon(Icons.preview), label: 'پیش‌نمایش'),
+          NavigationDestination(icon: Icon(Icons.send), label: 'ارسال'),
           NavigationDestination(icon: Icon(Icons.settings), label: 'تنظیمات'),
         ],
       ),
