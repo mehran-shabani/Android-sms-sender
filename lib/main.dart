@@ -9,6 +9,7 @@ import 'screens/report_screen.dart';
 import 'screens/send_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/local_db_service.dart';
+import 'theme/brand_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,10 +32,7 @@ class SmsSenderApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-      ),
+      theme: buildSmsSenderTheme(),
       home: const Directionality(
         textDirection: TextDirection.rtl,
         child: RootShell(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/contact_record.dart';
+import '../theme/brand_theme.dart';
 
 class StatusBadge extends StatelessWidget {
   const StatusBadge({super.key, required this.status});
@@ -21,12 +22,18 @@ class StatusBadge extends StatelessWidget {
 
   _BadgeData _statusData(ContactStatus status) {
     return switch (status) {
-      ContactStatus.pending => const _BadgeData('در انتظار', Icons.schedule, Colors.blueGrey),
-      ContactStatus.sent => const _BadgeData('ارسال‌شده', Icons.check_circle, Colors.green),
-      ContactStatus.failed => const _BadgeData('ناموفق', Icons.error, Colors.red),
-      ContactStatus.invalid => const _BadgeData('نامعتبر', Icons.warning, Colors.orange),
-      ContactStatus.duplicate => const _BadgeData('تکراری', Icons.copy, Colors.purple),
-      ContactStatus.skipped => const _BadgeData('ردشده', Icons.skip_next, Colors.grey),
+      ContactStatus.pending =>
+        const _BadgeData('در انتظار', Icons.schedule, BrandColors.orange),
+      ContactStatus.sent =>
+        const _BadgeData('ارسال‌شده', Icons.check_circle, Color(0xFF2E7D32)),
+      ContactStatus.failed =>
+        const _BadgeData('ناموفق', Icons.error, BrandColors.red),
+      ContactStatus.invalid =>
+        const _BadgeData('نامعتبر', Icons.warning, BrandColors.amber),
+      ContactStatus.duplicate =>
+        const _BadgeData('تکراری', Icons.copy, BrandColors.deepRed),
+      ContactStatus.skipped =>
+        const _BadgeData('ردشده', Icons.skip_next, Color(0xFF6D4C41)),
     };
   }
 }

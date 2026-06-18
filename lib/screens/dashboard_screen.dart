@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/local_db_service.dart';
 import '../services/send_queue_service.dart';
+import '../theme/brand_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -27,7 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _refreshStats() {
-    if (mounted) setState(() => _statsFuture = LocalDbService.instance.getStats());
+    if (mounted) {
+      setState(() => _statsFuture = LocalDbService.instance.getStats());
+    }
   }
 
   @override
@@ -43,19 +46,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
           return RefreshIndicator(
             onRefresh: () async => _refreshStats(),
-            child: GridView.count(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              crossAxisCount: MediaQuery.sizeOf(context).width > 600 ? 3 : 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
               children: [
-                _StatCard(label: 'کل مخاطبین', value: stats['total'] ?? 0),
-                _StatCard(label: 'معتبر', value: stats['valid'] ?? 0),
-                _StatCard(label: 'نامعتبر', value: stats['invalid'] ?? 0),
-                _StatCard(label: 'تکراری', value: stats['duplicates'] ?? 0),
-                _StatCard(label: 'ارسال‌شده', value: stats['sent'] ?? 0),
-                _StatCard(label: 'ناموفق', value: stats['failed'] ?? 0),
-                _StatCard(label: 'در انتظار', value: stats['pending'] ?? 0),
+                const _BrandHeader(),
+                const SizedBox(height: 16),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount:
+                      MediaQuery.sizeOf(context).width > 600 ? 3 : 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  children: [
+                    _StatCard(
+                      label: 'کل مخاطبین',
+                      value: stats['total'] ?? 0,
+                      icon: Icons.groups,
+                      color: BrandColors.red,
+                    ),
+                    _StatCard(
+                      label: 'معتبر',
+                      value: stats['valid'] ?? 0,
+                      icon: Icons.verified,
+                      color: BrandColors.orange,
+                    ),
+                    _StatCard(
+                      label: 'نامعتبر',
+                      value: stats['invalid'] ?? 0,
+                      icon: Icons.warning,
+                      color: BrandColors.amber,
+                    ),
+                    _StatCard(
+                      label: 'تکراری',
+                      value: stats['duplicates'] ?? 0,
+                      icon: Icons.copy_all,
+                      color: BrandColors.deepRed,
+                    ),
+                    _StatCard(
+                      label: 'ارسال‌شده',
+                      value: stats['sent'] ?? 0,
+                      icon: Icons.check_circle,
+                      color: const Color(0xFF2E7D32),
+                    ),
+                    _StatCard(
+                      label: 'ناموفق',
+                      value: stats['failed'] ?? 0,
+                      icon: Icons.error,
+                      color: BrandColors.red,
+                    ),
+                    _StatCard(
+                      label: 'در انتظار',
+                      value: stats['pending'] ?? 0,
+                      icon: Icons.schedule,
+                      color: BrandColors.orange,
+                    ),
+                  ],
+                ),
               ],
             ),
           );
@@ -65,10 +112,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        gradient: const LinearGradient(
+          colors: [BrandColors.orange, BrandColors.yellow, BrandColors.red],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/images/sms_sender_logo.png',
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ارسال پیامک محلی',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'مدیریت مخاطبین، پیش‌نمایش و ارسال کنترل‌شده پیامک',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
   final String label;
   final int value;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +190,24 @@ class _StatCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('$value', style: Theme.of(context).textTheme.headlineMedium),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(icon, color: color),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '$value',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
             const SizedBox(height: 8),
             Text(label, textAlign: TextAlign.center),
           ],
