@@ -13,8 +13,8 @@ class StatusBadge extends StatelessWidget {
     return Chip(
       label: Text(data.label),
       avatar: Icon(data.icon, size: 18, color: data.color),
-      side: BorderSide(color: data.color.withOpacity(0.4)),
-      backgroundColor: data.color.withOpacity(0.1),
+      side: BorderSide(color: data.color.withValues(alpha: 0.4)),
+      backgroundColor: data.color.withValues(alpha: 0.1),
       labelStyle: TextStyle(color: data.color, fontWeight: FontWeight.w600),
     );
   }

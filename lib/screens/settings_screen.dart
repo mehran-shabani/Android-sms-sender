@@ -131,7 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                   DropdownButtonFormField<int?>(
-                    value: _selectedSubscriptionId,
+                    initialValue: _selectedSubscriptionId,
                     decoration: const InputDecoration(
                       labelText: 'سیم‌کارت پیش‌فرض',
                       border: OutlineInputBorder(),

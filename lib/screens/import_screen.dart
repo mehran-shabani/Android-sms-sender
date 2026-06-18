@@ -209,7 +209,7 @@ class _ColumnDropdown extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<int?>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
         items: [
           if (!requiredField) const DropdownMenuItem<int?>(value: null, child: Text('انتخاب نشده')),

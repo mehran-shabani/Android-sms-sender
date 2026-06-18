@@ -1,0 +1,48 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+.pub-cache/
+build/
+
+# Generated files
+GeneratedPluginRegistrant.java
+generated_plugin_registrant.dart
+
+# Android / Gradle
+android/.gradle/
+android/captures/
+android/local.properties
+android/key.properties
+android/**/local.properties
+android/**/build/
+android/**/.cxx/
+android/**/*.keystore
+android/**/*.jks
+
+# IDEs and editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Coverage / test output
+coverage/
+test-results/
+
+# Misc
+.history/
+.buildlog/
+migrate_working_dir/

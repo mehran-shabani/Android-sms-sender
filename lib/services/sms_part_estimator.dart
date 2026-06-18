@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 class SmsPartEstimator {
   bool isUnicode(String message) {
