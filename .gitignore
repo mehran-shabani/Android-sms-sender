@@ -42,7 +42,7 @@ Thumbs.db
 # Coverage / test output
 coverage/
 test-results/
-
+.codex_spreadsheet_build/
 # Misc
 .history/
 .buildlog/
