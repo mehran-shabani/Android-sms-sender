@@ -13,6 +13,7 @@ generated_plugin_registrant.dart
 
 # Android / Gradle
 android/.gradle/
+android/.kotlin/
 android/captures/
 android/local.properties
 android/key.properties
