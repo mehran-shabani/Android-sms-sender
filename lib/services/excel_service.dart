@@ -91,13 +91,13 @@ Map<String, Object?> readFirstWorksheetInIsolate(Uint8List bytes) {
   return ExcelService().readFirstWorksheet(bytes).toMap();
 }
 
-List<Map<String, Object?>> buildContactsInIsolate(Map<String, Object?> message) {
-  final data = ExcelImportData.fromMap(message['data'] as Map<String, Object?>);
+List<Map<String, Object?>> buildContactsInIsolate(Map<dynamic, dynamic> message) {
+  final data = ExcelImportData.fromMap(Map<String, Object?>.from(message['data'] as Map));
   final mapping = ExcelColumnMapping.fromMap(
-    message['mapping'] as Map<String, Object?>,
+    Map<String, Object?>.from(message['mapping'] as Map),
   );
   final settings = AppSettings.fromMap(
-    message['settings'] as Map<String, Object?>,
+    Map<String, Object?>.from(message['settings'] as Map),
   );
 
   return ExcelService()
