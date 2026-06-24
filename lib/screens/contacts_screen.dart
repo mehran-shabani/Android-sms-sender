@@ -22,13 +22,20 @@ class _ContactsScreenState extends State<ContactsScreen> {
   ContactFilter _filter = ContactFilter.all;
   late Future<List<ContactRecord>> _contactsFuture;
   Timer? _refreshDebounce;
+  Timer? _searchDebounce;
+  String _appliedQuery = '';
+  List<ContactRecord>? _filteredContactsCache;
+  List<ContactRecord>? _filteredContactsCacheSource;
+  int? _filteredContactsCacheCount;
+  ContactFilter? _filteredContactsCacheFilter;
+  String? _filteredContactsCacheQuery;
   final Set<int> _selectedIds = <int>{};
 
   @override
   void initState() {
     super.initState();
     _contactsFuture = LocalDbService.instance.getAllContacts();
-    _searchController.addListener(() => setState(() {}));
+    _searchController.addListener(_onSearchChanged);
     SendQueueService.instance.addListener(_refresh);
   }
 
@@ -36,8 +43,24 @@ class _ContactsScreenState extends State<ContactsScreen> {
   void dispose() {
     SendQueueService.instance.removeListener(_refresh);
     _refreshDebounce?.cancel();
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _searchDebounce = null;
+      if (!mounted) return;
+
+      final nextQuery = _searchController.text.trim().toLowerCase();
+      if (nextQuery == _appliedQuery) return;
+
+      setState(() {
+        _appliedQuery = nextQuery;
+      });
+    });
   }
 
   void _refresh() {
@@ -54,8 +77,17 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   List<ContactRecord> _applyFilters(List<ContactRecord> contacts) {
-    final query = _searchController.text.trim().toLowerCase();
-    return contacts.where((contact) {
+    final query = _appliedQuery;
+    final cachedContacts = _filteredContactsCache;
+    if (cachedContacts != null &&
+        identical(_filteredContactsCacheSource, contacts) &&
+        _filteredContactsCacheCount == contacts.length &&
+        _filteredContactsCacheFilter == _filter &&
+        _filteredContactsCacheQuery == query) {
+      return cachedContacts;
+    }
+
+    final filteredContacts = contacts.where((contact) {
       final matchesFilter = switch (_filter) {
         ContactFilter.all => true,
         ContactFilter.valid => contact.isValidPhone,
@@ -74,6 +106,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
           contact.lastName.toLowerCase().contains(query) ||
           contact.token.toLowerCase().contains(query);
     }).toList();
+
+    _filteredContactsCache = filteredContacts;
+    _filteredContactsCacheSource = contacts;
+    _filteredContactsCacheCount = contacts.length;
+    _filteredContactsCacheFilter = _filter;
+    _filteredContactsCacheQuery = query;
+
+    return filteredContacts;
   }
 
   @override
