@@ -159,18 +159,47 @@ CREATE TABLE app_settings (
     bool onlyPendingOrFailed = true,
     int? limit,
   }) async {
-    final contacts = await getAllContacts();
-    final eligible = await _filterEligibleContacts(
-      contacts,
-      onlyPendingOrFailed: onlyPendingOrFailed,
+    final db = await init();
+    final settings = await getSettings();
+    final whereClauses = <String>[];
+    final whereArgs = <Object?>[];
+
+    if (onlyPendingOrFailed) {
+      whereClauses.add('status IN (?, ?)');
+      whereArgs.addAll([
+        ContactStatus.pending.name,
+        ContactStatus.failed.name,
+      ]);
+    }
+    if (settings.skipInvalid) {
+      whereClauses.add('is_valid_phone = 1');
+    }
+    if (settings.skipDuplicates) {
+      whereClauses.add('is_duplicate = 0');
+    }
+
+    final rows = await db.query(
+      'contacts',
+      where: whereClauses.isEmpty ? null : whereClauses.join(' AND '),
+      whereArgs: whereArgs.isEmpty ? null : whereArgs,
+      orderBy: 'source_row ASC, id ASC',
+      limit: limit,
     );
-    if (limit == null || eligible.length <= limit) return eligible;
-    return eligible.take(limit).toList();
+    return rows.map(ContactRecord.fromMap).toList();
   }
 
   Future<List<ContactRecord>> getPendingOrFailedContacts() async {
-    final contacts = await getAllContacts();
-    return contacts.where((contact) => contact.canBePreparedForSending).toList();
+    final db = await init();
+    final rows = await db.query(
+      'contacts',
+      where: 'status IN (?, ?)',
+      whereArgs: [
+        ContactStatus.pending.name,
+        ContactStatus.failed.name,
+      ],
+      orderBy: 'source_row ASC, id ASC',
+    );
+    return rows.map(ContactRecord.fromMap).toList();
   }
 
   Future<List<ContactRecord>> _filterEligibleContacts(
