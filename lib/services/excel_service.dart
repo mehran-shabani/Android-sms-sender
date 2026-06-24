@@ -13,6 +13,20 @@ class ExcelImportData {
 
   final List<String> headers;
   final List<List<String>> rows;
+
+  factory ExcelImportData.fromMap(Map<String, Object?> map) {
+    return ExcelImportData(
+      headers: (map['headers'] as List).cast<String>(),
+      rows: (map['rows'] as List)
+          .map((row) => (row as List).cast<String>())
+          .toList(),
+    );
+  }
+
+  Map<String, Object?> toMap() => {
+        'headers': headers,
+        'rows': rows,
+      };
 }
 
 class ExcelColumnMapping {
@@ -29,6 +43,22 @@ class ExcelColumnMapping {
   final int? fullNameIndex;
 
   bool get hasRequiredPhone => phoneIndex != null;
+
+  factory ExcelColumnMapping.fromMap(Map<String, Object?> map) {
+    return ExcelColumnMapping(
+      phoneIndex: map['phoneIndex'] as int?,
+      firstNameIndex: map['firstNameIndex'] as int?,
+      lastNameIndex: map['lastNameIndex'] as int?,
+      fullNameIndex: map['fullNameIndex'] as int?,
+    );
+  }
+
+  Map<String, Object?> toMap() => {
+        'phoneIndex': phoneIndex,
+        'firstNameIndex': firstNameIndex,
+        'lastNameIndex': lastNameIndex,
+        'fullNameIndex': fullNameIndex,
+      };
 }
 
 class ImportSummary {
@@ -55,6 +85,25 @@ class ImportSummary {
       pending: contacts.where((contact) => contact.status == ContactStatus.pending).length,
     );
   }
+}
+
+Map<String, Object?> readFirstWorksheetInIsolate(Uint8List bytes) {
+  return ExcelService().readFirstWorksheet(bytes).toMap();
+}
+
+List<Map<String, Object?>> buildContactsInIsolate(Map<String, Object?> message) {
+  final data = ExcelImportData.fromMap(message['data'] as Map<String, Object?>);
+  final mapping = ExcelColumnMapping.fromMap(
+    message['mapping'] as Map<String, Object?>,
+  );
+  final settings = AppSettings.fromMap(
+    message['settings'] as Map<String, Object?>,
+  );
+
+  return ExcelService()
+      .buildContacts(data: data, mapping: mapping, settings: settings)
+      .map((contact) => contact.toMap())
+      .toList();
 }
 
 class ExcelService {
