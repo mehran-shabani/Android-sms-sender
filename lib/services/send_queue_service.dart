@@ -107,7 +107,7 @@ class SendQueueService extends ChangeNotifier {
         await _sendOne(contact, settings);
       }
       if (i < _queue.length - 1 && !_stopRequested) {
-        await Future<void>.delayed(Duration(seconds: delaySeconds));
+        await _waitDelayOrStop(Duration(seconds: delaySeconds));
       }
     }
     return _finish(stopped: _stopRequested, current: _stopRequested ? 'ارسال متوقف شد' : 'پایان ارسال');
@@ -118,6 +118,23 @@ class SendQueueService extends ChangeNotifier {
   void stop() { if (isActive) { _stopRequested = true; if (state == SendQueueState.paused) resume(); state = SendQueueState.stopped; notifyListeners(); } }
 
   Future<void> _waitIfPaused() async { if (state == SendQueueState.paused) await _resumeCompleter?.future; }
+
+  Future<void> _waitDelayOrStop(Duration delay) async {
+    const step = Duration(milliseconds: 500);
+    var remaining = delay;
+
+    while (remaining > Duration.zero && !_stopRequested) {
+      await _waitIfPaused();
+      if (_stopRequested) return;
+
+      final waitFor = remaining < step ? remaining : step;
+      final stopwatch = Stopwatch()..start();
+      await Future<void>.delayed(waitFor);
+      stopwatch.stop();
+      remaining -= stopwatch.elapsed;
+    }
+  }
+
   int _safeDelay(AppSettings settings) => settings.delaySeconds.clamp(10, 120);
 
   String? _skipReason(ContactRecord c, AppSettings s) {
