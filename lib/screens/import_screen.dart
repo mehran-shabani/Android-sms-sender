@@ -32,6 +32,7 @@ class _ImportScreenState extends State<ImportScreen> {
         allowedExtensions: const ['xlsx'],
         withData: true,
       );
+      if (!mounted) return;
       if (result == null || result.files.single.bytes == null) return;
       final data = _excelService.readFirstWorksheet(result.files.single.bytes!);
       final mapping = _excelService.detectMapping(data.headers);
@@ -42,8 +43,10 @@ class _ImportScreenState extends State<ImportScreen> {
       });
       if (mapping.hasRequiredPhone) {
         await _import(mapping);
+        if (!mounted) return;
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -63,22 +66,25 @@ class _ImportScreenState extends State<ImportScreen> {
     });
     try {
       final settings = await LocalDbService.instance.getSettings();
+      if (!mounted) return;
       final contacts = _excelService.buildContacts(
         data: data,
         mapping: mapping,
         settings: settings,
       );
       await LocalDbService.instance.clearContacts();
+      if (!mounted) return;
       await LocalDbService.instance.insertContacts(contacts);
+      if (!mounted) return;
       setState(() {
         _mapping = mapping;
         _summary = ImportSummary.fromContacts(contacts);
       });
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('مخاطبین از فایل اکسل ذخیره شدند')),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
