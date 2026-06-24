@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/contact_record.dart';
@@ -19,6 +21,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   final _searchController = TextEditingController();
   ContactFilter _filter = ContactFilter.all;
   late Future<List<ContactRecord>> _contactsFuture;
+  Timer? _refreshDebounce;
   final Set<int> _selectedIds = <int>{};
 
   @override
@@ -32,12 +35,22 @@ class _ContactsScreenState extends State<ContactsScreen> {
   @override
   void dispose() {
     SendQueueService.instance.removeListener(_refresh);
+    _refreshDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _refresh() {
-    setState(() => _contactsFuture = LocalDbService.instance.getAllContacts());
+    if (_refreshDebounce?.isActive ?? false) return;
+
+    _refreshDebounce = Timer(const Duration(milliseconds: 300), () {
+      _refreshDebounce = null;
+      if (!mounted) return;
+
+      setState(() {
+        _contactsFuture = LocalDbService.instance.getAllContacts();
+      });
+    });
   }
 
   List<ContactRecord> _applyFilters(List<ContactRecord> contacts) {
