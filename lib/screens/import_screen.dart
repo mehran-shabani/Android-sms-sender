@@ -80,7 +80,9 @@ class _ImportScreenState extends State<ImportScreen> {
         'settings': settings.toMap(),
       });
       if (!mounted) return;
-      final contacts = contactMaps.map(ContactRecord.fromMap).toList();
+      final contacts = contactMaps
+          .map((m) => ContactRecord.fromMap(Map<String, Object?>.from(m as Map)))
+          .toList();
       await LocalDbService.instance.clearContacts();
       if (!mounted) return;
       await LocalDbService.instance.insertContacts(contacts);
