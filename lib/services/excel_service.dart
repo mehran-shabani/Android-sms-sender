@@ -13,6 +13,20 @@ class ExcelImportData {
 
   final List<String> headers;
   final List<List<String>> rows;
+
+  factory ExcelImportData.fromMap(Map<String, Object?> map) {
+    return ExcelImportData(
+      headers: (map['headers'] as List).cast<String>(),
+      rows: (map['rows'] as List)
+          .map((row) => (row as List).cast<String>())
+          .toList(),
+    );
+  }
+
+  Map<String, Object?> toMap() => {
+        'headers': headers,
+        'rows': rows,
+      };
 }
 
 class ExcelColumnMapping {
@@ -29,6 +43,22 @@ class ExcelColumnMapping {
   final int? fullNameIndex;
 
   bool get hasRequiredPhone => phoneIndex != null;
+
+  factory ExcelColumnMapping.fromMap(Map<String, Object?> map) {
+    return ExcelColumnMapping(
+      phoneIndex: map['phoneIndex'] as int?,
+      firstNameIndex: map['firstNameIndex'] as int?,
+      lastNameIndex: map['lastNameIndex'] as int?,
+      fullNameIndex: map['fullNameIndex'] as int?,
+    );
+  }
+
+  Map<String, Object?> toMap() => {
+        'phoneIndex': phoneIndex,
+        'firstNameIndex': firstNameIndex,
+        'lastNameIndex': lastNameIndex,
+        'fullNameIndex': fullNameIndex,
+      };
 }
 
 class ImportSummary {
@@ -55,6 +85,25 @@ class ImportSummary {
       pending: contacts.where((contact) => contact.status == ContactStatus.pending).length,
     );
   }
+}
+
+Map<String, Object?> readFirstWorksheetInIsolate(Uint8List bytes) {
+  return ExcelService().readFirstWorksheet(bytes).toMap();
+}
+
+List<Map<String, Object?>> buildContactsInIsolate(Map<dynamic, dynamic> message) {
+  final data = ExcelImportData.fromMap(Map<String, Object?>.from(message['data'] as Map));
+  final mapping = ExcelColumnMapping.fromMap(
+    Map<String, Object?>.from(message['mapping'] as Map),
+  );
+  final settings = AppSettings.fromMap(
+    Map<String, Object?>.from(message['settings'] as Map),
+  );
+
+  return ExcelService()
+      .buildContacts(data: data, mapping: mapping, settings: settings)
+      .map((contact) => contact.toMap())
+      .toList();
 }
 
 class ExcelService {

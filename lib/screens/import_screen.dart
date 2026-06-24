@@ -1,6 +1,8 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../models/contact_record.dart';
 import '../services/excel_service.dart';
 import '../services/local_db_service.dart';
 
@@ -34,7 +36,12 @@ class _ImportScreenState extends State<ImportScreen> {
       );
       if (!mounted) return;
       if (result == null || result.files.single.bytes == null) return;
-      final data = _excelService.readFirstWorksheet(result.files.single.bytes!);
+      final dataMap = await compute(
+        readFirstWorksheetInIsolate,
+        result.files.single.bytes!,
+      );
+      if (!mounted) return;
+      final data = ExcelImportData.fromMap(Map<String, Object?>.from(dataMap));
       final mapping = _excelService.detectMapping(data.headers);
       setState(() {
         _data = data;
@@ -67,11 +74,15 @@ class _ImportScreenState extends State<ImportScreen> {
     try {
       final settings = await LocalDbService.instance.getSettings();
       if (!mounted) return;
-      final contacts = _excelService.buildContacts(
-        data: data,
-        mapping: mapping,
-        settings: settings,
-      );
+      final contactMaps = await compute(buildContactsInIsolate, {
+        'data': data.toMap(),
+        'mapping': mapping.toMap(),
+        'settings': settings.toMap(),
+      });
+      if (!mounted) return;
+      final contacts = contactMaps
+          .map((m) => ContactRecord.fromMap(Map<String, Object?>.from(m as Map)))
+          .toList();
       await LocalDbService.instance.clearContacts();
       if (!mounted) return;
       await LocalDbService.instance.insertContacts(contacts);
