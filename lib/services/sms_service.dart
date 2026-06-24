@@ -93,7 +93,8 @@ class SmsService {
       'PERMISSION_DENIED' => 'permission denied',
       'NO_SMS_FEATURE' => 'device does not support SMS',
       'NO_DEFAULT_SMS' => 'no SIM if detected',
-      'NATIVE_SEND_FAILURE' => 'native send failure: ${error.message ?? ''}'.trim(),
+      'NATIVE_SEND_FAILURE' =>
+        'native send failure: ${error.message ?? ''}'.trim(),
       _ => 'unknown error: ${error.message ?? error.code}',
     };
   }
@@ -108,15 +109,19 @@ class SmsService {
   }
 
   static Future<SmsCapabilityInfo> requestSmsCapabilityInfo() async {
-    final response = await _channel.invokeMapMethod<String, dynamic>('requestSmsCapabilityInfo');
+    final response = await _channel
+        .invokeMapMethod<String, dynamic>('requestSmsCapabilityInfo');
     return SmsCapabilityInfo.fromMap(response ?? const <String, dynamic>{});
   }
 
   static Future<List<SubscriptionInfo>> getSubscriptionInfo() async {
     try {
-      final List<dynamic>? response = await _channel.invokeMethod<List<dynamic>>('getSubscriptionInfo');
+      final List<dynamic>? response =
+          await _channel.invokeMethod<List<dynamic>>('getSubscriptionInfo');
       if (response == null) return [];
-      return response.map((e) => SubscriptionInfo.fromMap(e as Map<dynamic, dynamic>)).toList();
+      return response
+          .map((e) => SubscriptionInfo.fromMap(e as Map<dynamic, dynamic>))
+          .toList();
     } catch (e) {
       debugPrint('Error getting subscription info: $e');
       return [];
@@ -136,6 +141,7 @@ class SmsService {
         if (subscriptionId != null) 'subscriptionId': subscriptionId,
       },
     );
-    return SmsSendResult.fromMap(response ?? const <String, dynamic>{'success': false});
+    return SmsSendResult.fromMap(
+        response ?? const <String, dynamic>{'success': false});
   }
 }

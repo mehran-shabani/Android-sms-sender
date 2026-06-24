@@ -59,24 +59,72 @@ class _RootShellState extends State<RootShell> {
     ReportScreen(),
     SettingsScreen(),
   ];
+  static const _destinations = [
+    _AppDestination(icon: Icons.dashboard, label: 'داشبورد'),
+    _AppDestination(icon: Icons.upload_file, label: 'ورود'),
+    _AppDestination(icon: Icons.contacts, label: 'مخاطبین'),
+    _AppDestination(icon: Icons.preview, label: 'پیش‌نمایش'),
+    _AppDestination(icon: Icons.send, label: 'ارسال'),
+    _AppDestination(icon: Icons.assessment, label: 'گزارش'),
+    _AppDestination(icon: Icons.settings, label: 'تنظیمات'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'داشبورد'),
-          NavigationDestination(icon: Icon(Icons.upload_file), label: 'ورود'),
-          NavigationDestination(icon: Icon(Icons.contacts), label: 'مخاطبین'),
-          NavigationDestination(icon: Icon(Icons.preview), label: 'پیش‌نمایش'),
-          NavigationDestination(icon: Icon(Icons.send), label: 'ارسال'),
-          NavigationDestination(icon: Icon(Icons.assessment), label: 'گزارش'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'تنظیمات'),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useRail = constraints.maxWidth >= 720;
+        if (useRail) {
+          return Scaffold(
+            body: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _index,
+                  onDestinationSelected: (value) {
+                    setState(() => _index = value);
+                  },
+                  labelType: NavigationRailLabelType.all,
+                  destinations: [
+                    for (final destination in _destinations)
+                      NavigationRailDestination(
+                        icon: Icon(destination.icon),
+                        selectedIcon: Icon(destination.icon),
+                        label: Text(destination.label),
+                      ),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: _screens[_index]),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          body: _screens[_index],
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _index,
+            height: 72,
+            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+            onDestinationSelected: (value) => setState(() => _index = value),
+            destinations: [
+              for (final destination in _destinations)
+                NavigationDestination(
+                  icon: Icon(destination.icon),
+                  selectedIcon: Icon(destination.icon),
+                  label: destination.label,
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
+}
+
+class _AppDestination {
+  const _AppDestination({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
 }

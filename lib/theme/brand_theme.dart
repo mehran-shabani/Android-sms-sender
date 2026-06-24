@@ -8,9 +8,9 @@ class BrandColors {
   static const orange = Color(0xFFFF7A00);
   static const amber = Color(0xFFFFB300);
   static const yellow = Color(0xFFFFE000);
-  static const warmSurface = Color(0xFFFFF7DE);
-  static const warmSurfaceAlt = Color(0xFFFFE9B5);
-  static const ink = Color(0xFF2F1800);
+  static const warmSurface = Color(0xFFFAFAF8);
+  static const warmSurfaceAlt = Color(0xFFF0F2F4);
+  static const ink = Color(0xFF202124);
 }
 
 ThemeData buildSmsSenderTheme() {
@@ -34,10 +34,10 @@ ThemeData buildSmsSenderTheme() {
     onErrorContainer: Color(0xFF410002),
     surface: BrandColors.warmSurface,
     onSurface: BrandColors.ink,
-    surfaceContainerHighest: Color(0xFFFFEBC1),
-    onSurfaceVariant: Color(0xFF654200),
-    outline: Color(0xFFD38A00),
-    outlineVariant: Color(0xFFFFC46C),
+    surfaceContainerHighest: Color(0xFFE8EAED),
+    onSurfaceVariant: Color(0xFF5F6368),
+    outline: Color(0xFFB8BDC4),
+    outlineVariant: Color(0xFFDADCE0),
     shadow: Colors.black,
     scrim: Colors.black,
     inverseSurface: BrandColors.ink,
@@ -49,37 +49,38 @@ ThemeData buildSmsSenderTheme() {
   return base.copyWith(
     scaffoldBackgroundColor: BrandColors.warmSurface,
     appBarTheme: const AppBarTheme(
-      backgroundColor: BrandColors.red,
-      foregroundColor: Colors.white,
+      backgroundColor: Colors.white,
+      foregroundColor: BrandColors.ink,
       elevation: 0,
+      scrolledUnderElevation: 1,
       centerTitle: false,
     ),
     cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 1,
-      shadowColor: BrandColors.orange.withValues(alpha: 0.18),
-      surfaceTintColor: BrandColors.yellow.withValues(alpha: 0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: BrandColors.orange.withValues(alpha: 0.14)),
+        side: const BorderSide(color: Color(0xFFE6E8EB)),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
-      indicatorColor: BrandColors.yellow.withValues(alpha: 0.42),
+      indicatorColor: BrandColors.red.withValues(alpha: 0.12),
       surfaceTintColor: BrandColors.warmSurface,
       iconTheme: WidgetStateProperty.resolveWith((states) {
         return IconThemeData(
           color: states.contains(WidgetState.selected)
               ? BrandColors.red
-              : BrandColors.orange,
+              : scheme.onSurfaceVariant,
         );
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         return TextStyle(
           color: states.contains(WidgetState.selected)
               ? BrandColors.deepRed
-              : BrandColors.ink,
+              : scheme.onSurfaceVariant,
           fontSize: 12,
           fontWeight: states.contains(WidgetState.selected)
               ? FontWeight.w700
@@ -99,7 +100,7 @@ ThemeData buildSmsSenderTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: BrandColors.deepRed,
-        side: const BorderSide(color: BrandColors.orange),
+        side: const BorderSide(color: Color(0xFFB8BDC4)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
@@ -112,8 +113,7 @@ ThemeData buildSmsSenderTheme() {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide:
-            BorderSide(color: BrandColors.orange.withValues(alpha: 0.55)),
+        borderSide: const BorderSide(color: Color(0xFFDADCE0)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -122,9 +122,9 @@ ThemeData buildSmsSenderTheme() {
     ),
     chipTheme: base.chipTheme.copyWith(
       backgroundColor: Colors.white,
-      selectedColor: BrandColors.yellow.withValues(alpha: 0.55),
+      selectedColor: BrandColors.red.withValues(alpha: 0.10),
       checkmarkColor: BrandColors.deepRed,
-      side: BorderSide(color: BrandColors.orange.withValues(alpha: 0.4)),
+      side: const BorderSide(color: Color(0xFFDADCE0)),
       labelStyle: const TextStyle(color: BrandColors.ink),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
@@ -132,7 +132,6 @@ ThemeData buildSmsSenderTheme() {
       color: BrandColors.red,
       linearTrackColor: BrandColors.warmSurfaceAlt,
     ),
-    dividerTheme:
-        DividerThemeData(color: BrandColors.orange.withValues(alpha: 0.35)),
+    dividerTheme: const DividerThemeData(color: Color(0xFFE6E8EB)),
   );
 }

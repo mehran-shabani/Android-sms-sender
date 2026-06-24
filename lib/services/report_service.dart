@@ -40,13 +40,17 @@ class ReportService {
         TextCellValue(contact.error ?? ''),
         TextCellValue(contact.isDuplicate ? 'بله' : 'خیر'),
         TextCellValue(contact.isValidPhone ? 'بله' : 'خیر'),
-        TextCellValue(contact.sentAt == null ? '' : dateFormat.format(contact.sentAt!)),
-        TextCellValue(contact.deliveredAt == null ? '' : dateFormat.format(contact.deliveredAt!)),
+        TextCellValue(
+            contact.sentAt == null ? '' : dateFormat.format(contact.sentAt!)),
+        TextCellValue(contact.deliveredAt == null
+            ? ''
+            : dateFormat.format(contact.deliveredAt!)),
       ]);
     }
     final bytes = excel.encode() ?? <int>[];
     final dir = await _exportDirectory();
-    final fileName = 'sms_report_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.xlsx';
+    final fileName =
+        'sms_report_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.xlsx';
     final file = File('${dir.path}${Platform.pathSeparator}$fileName');
     await file.writeAsBytes(bytes, flush: true);
     return ReportExportResult(path: file.path, rows: contacts.length);
@@ -63,12 +67,29 @@ class ReportService {
   }
 
   static const _headers = [
-    'ردیف', 'نام', 'نام خانوادگی', 'نام کامل', 'توکن', 'موبایل', 'شماره خام', 'متن پیام',
-    'تعداد بخش پیامک', 'وضعیت', 'خطا', 'تکراری', 'شماره معتبر', 'زمان ارسال', 'زمان تحویل اگر موجود بود',
+    'ردیف',
+    'نام',
+    'نام خانوادگی',
+    'نام کامل',
+    'توکن',
+    'موبایل',
+    'شماره خام',
+    'متن پیام',
+    'تعداد بخش پیامک',
+    'وضعیت',
+    'خطا',
+    'تکراری',
+    'شماره معتبر',
+    'زمان ارسال',
+    'زمان تحویل اگر موجود بود',
   ];
 
   String _statusLabel(ContactStatus status) => switch (status) {
-        ContactStatus.pending => 'در انتظار', ContactStatus.sent => 'ارسال‌شده', ContactStatus.failed => 'ناموفق',
-        ContactStatus.invalid => 'نامعتبر', ContactStatus.duplicate => 'تکراری', ContactStatus.skipped => 'ردشده',
+        ContactStatus.pending => 'در انتظار',
+        ContactStatus.sent => 'ارسال‌شده',
+        ContactStatus.failed => 'ناموفق',
+        ContactStatus.invalid => 'نامعتبر',
+        ContactStatus.duplicate => 'تکراری',
+        ContactStatus.skipped => 'ردشده',
       };
 }

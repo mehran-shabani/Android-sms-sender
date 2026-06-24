@@ -51,57 +51,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 const _BrandHeader(),
                 const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount:
-                      MediaQuery.sizeOf(context).width > 600 ? 3 : 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  children: [
-                    _StatCard(
-                      label: 'کل مخاطبین',
-                      value: stats['total'] ?? 0,
-                      icon: Icons.groups,
-                      color: BrandColors.red,
-                    ),
-                    _StatCard(
-                      label: 'معتبر',
-                      value: stats['valid'] ?? 0,
-                      icon: Icons.verified,
-                      color: BrandColors.orange,
-                    ),
-                    _StatCard(
-                      label: 'نامعتبر',
-                      value: stats['invalid'] ?? 0,
-                      icon: Icons.warning,
-                      color: BrandColors.amber,
-                    ),
-                    _StatCard(
-                      label: 'تکراری',
-                      value: stats['duplicates'] ?? 0,
-                      icon: Icons.copy_all,
-                      color: BrandColors.deepRed,
-                    ),
-                    _StatCard(
-                      label: 'ارسال‌شده',
-                      value: stats['sent'] ?? 0,
-                      icon: Icons.check_circle,
-                      color: const Color(0xFF2E7D32),
-                    ),
-                    _StatCard(
-                      label: 'ناموفق',
-                      value: stats['failed'] ?? 0,
-                      icon: Icons.error,
-                      color: BrandColors.red,
-                    ),
-                    _StatCard(
-                      label: 'در انتظار',
-                      value: stats['pending'] ?? 0,
-                      icon: Icons.schedule,
-                      color: BrandColors.orange,
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final crossAxisCount = width >= 840
+                        ? 4
+                        : width >= 560
+                            ? 3
+                            : 2;
+                    return GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: width >= 560 ? 1.45 : 1.15,
+                      children: [
+                        _StatCard(
+                          label: 'کل مخاطبین',
+                          value: stats['total'] ?? 0,
+                          icon: Icons.groups,
+                          color: BrandColors.red,
+                        ),
+                        _StatCard(
+                          label: 'معتبر',
+                          value: stats['valid'] ?? 0,
+                          icon: Icons.verified,
+                          color: const Color(0xFF188038),
+                        ),
+                        _StatCard(
+                          label: 'نامعتبر',
+                          value: stats['invalid'] ?? 0,
+                          icon: Icons.warning,
+                          color: BrandColors.amber,
+                        ),
+                        _StatCard(
+                          label: 'تکراری',
+                          value: stats['duplicates'] ?? 0,
+                          icon: Icons.copy_all,
+                          color: BrandColors.deepRed,
+                        ),
+                        _StatCard(
+                          label: 'ارسال‌شده',
+                          value: stats['sent'] ?? 0,
+                          icon: Icons.check_circle,
+                          color: const Color(0xFF2E7D32),
+                        ),
+                        _StatCard(
+                          label: 'ناموفق',
+                          value: stats['failed'] ?? 0,
+                          icon: Icons.error,
+                          color: BrandColors.red,
+                        ),
+                        _StatCard(
+                          label: 'در انتظار',
+                          value: stats['pending'] ?? 0,
+                          icon: Icons.schedule,
+                          color: const Color(0xFF1967D2),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -203,7 +213,9 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '$value',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w800,
                   ),

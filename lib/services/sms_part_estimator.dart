@@ -1,4 +1,3 @@
-
 class SmsPartEstimator {
   bool isUnicode(String message) {
     // GSM 7-bit default alphabet characters

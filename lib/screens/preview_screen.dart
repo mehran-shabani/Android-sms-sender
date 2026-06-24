@@ -36,8 +36,12 @@ class _PreviewScreenState extends State<PreviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.selectedOnly ? 'پیش‌نمایش انتخاب‌شده‌ها' : 'پیش‌نمایش آماده ارسال'),
-        actions: [IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh))],
+        title: Text(widget.selectedOnly
+            ? 'پیش‌نمایش انتخاب‌شده‌ها'
+            : 'پیش‌نمایش آماده ارسال'),
+        actions: [
+          IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh))
+        ],
       ),
       body: FutureBuilder<_PreviewData>(
         future: _future,
@@ -118,7 +122,8 @@ class _SummaryCard extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            _SummaryChip(label: 'تعداد انتخاب‌شده', value: data.contacts.length),
+            _SummaryChip(
+                label: 'تعداد انتخاب‌شده', value: data.contacts.length),
             _SummaryChip(label: 'معتبر', value: data.validCount),
             _SummaryChip(label: 'نامعتبر', value: data.invalidCount),
             _SummaryChip(label: 'تکراری', value: data.duplicateCount),
@@ -175,9 +180,11 @@ class _PreviewContactCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(displayName.isEmpty ? 'بدون نام' : displayName, style: Theme.of(context).textTheme.titleMedium),
+            Text(displayName.isEmpty ? 'بدون نام' : displayName,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text('شماره: ${contact.phone.isEmpty ? contact.rawPhone : contact.phone}'),
+            Text(
+                'شماره: ${contact.phone.isEmpty ? contact.rawPhone : contact.phone}'),
             Text('توکن: ${contact.token}'),
             Text('تعداد تقریبی بخش پیامک: $parts'),
             const Divider(height: 24),

@@ -4,6 +4,8 @@ import 'package:sqflite/sqflite.dart';
 import '../models/app_settings.dart';
 import '../models/contact_record.dart';
 
+enum ContactListFilter { all, valid, invalid, duplicate, pending, sent, failed }
+
 class LocalDbService {
   LocalDbService._();
   static final LocalDbService instance = LocalDbService._();
@@ -15,7 +17,7 @@ class LocalDbService {
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       p.join(dbPath, 'android_sms_sender.db'),
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
 CREATE TABLE contacts (
@@ -40,6 +42,7 @@ CREATE TABLE contacts (
   is_selected INTEGER NOT NULL DEFAULT 0
 )
 ''');
+        await _createIndexes(db);
         await db.execute('''
 CREATE TABLE app_settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -59,17 +62,45 @@ CREATE TABLE app_settings (
             'ADD COLUMN is_selected INTEGER NOT NULL DEFAULT 0',
           );
         }
+        if (oldVersion < 3) {
+          await _createIndexes(db);
+        }
       },
     );
     return _db!;
   }
 
+  Future<void> _createIndexes(DatabaseExecutor db) async {
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_source_row_id '
+      'ON contacts(source_row, id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_status_source '
+      'ON contacts(status, source_row, id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_selected_source '
+      'ON contacts(is_selected, source_row, id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_valid_source '
+      'ON contacts(is_valid_phone, source_row, id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_contacts_duplicate_source '
+      'ON contacts(is_duplicate, source_row, id)',
+    );
+  }
+
   Future<void> insertContacts(List<ContactRecord> contacts) async {
     final db = await init();
     await db.transaction((txn) async {
+      final batch = txn.batch();
       for (final contact in contacts) {
-        await txn.insert('contacts', contact.toMap()..remove('id'));
+        batch.insert('contacts', contact.toMap()..remove('id'));
       }
+      await batch.commit(noResult: true);
     });
   }
 
@@ -79,6 +110,86 @@ CREATE TABLE app_settings (
     return rows.map(ContactRecord.fromMap).toList();
   }
 
+  Future<List<ContactRecord>> getContactsPage({
+    required int limit,
+    required int offset,
+    ContactListFilter filter = ContactListFilter.all,
+    String query = '',
+  }) async {
+    final db = await init();
+    final where = _contactsListWhere(filter: filter, query: query);
+    final rows = await db.query(
+      'contacts',
+      where: where.clause,
+      whereArgs: where.args.isEmpty ? null : where.args,
+      orderBy: 'source_row ASC, id ASC',
+      limit: limit,
+      offset: offset,
+    );
+    return rows.map(ContactRecord.fromMap).toList();
+  }
+
+  _SqlWhere _contactsListWhere({
+    required ContactListFilter filter,
+    required String query,
+  }) {
+    final clauses = <String>[];
+    final args = <Object?>[];
+
+    switch (filter) {
+      case ContactListFilter.all:
+        break;
+      case ContactListFilter.valid:
+        clauses.add('is_valid_phone = 1');
+        break;
+      case ContactListFilter.invalid:
+        clauses.add('is_valid_phone = 0');
+        break;
+      case ContactListFilter.duplicate:
+        clauses.add('is_duplicate = 1');
+        break;
+      case ContactListFilter.pending:
+        clauses.add('status = ?');
+        args.add(ContactStatus.pending.name);
+        break;
+      case ContactListFilter.sent:
+        clauses.add('status = ?');
+        args.add(ContactStatus.sent.name);
+        break;
+      case ContactListFilter.failed:
+        clauses.add('status = ?');
+        args.add(ContactStatus.failed.name);
+        break;
+    }
+
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isNotEmpty) {
+      final like = '%${_escapeLike(normalizedQuery)}%';
+      clauses.add('''
+(
+  LOWER(phone) LIKE ? ESCAPE '\\' OR
+  LOWER(raw_phone) LIKE ? ESCAPE '\\' OR
+  LOWER(full_name) LIKE ? ESCAPE '\\' OR
+  LOWER(first_name) LIKE ? ESCAPE '\\' OR
+  LOWER(last_name) LIKE ? ESCAPE '\\' OR
+  LOWER(token) LIKE ? ESCAPE '\\'
+)
+''');
+      args.addAll(List.filled(6, like));
+    }
+
+    return _SqlWhere(
+      clause: clauses.isEmpty ? null : clauses.join(' AND '),
+      args: args,
+    );
+  }
+
+  String _escapeLike(String value) {
+    return value
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+  }
 
   Future<Set<int>> getSelectedContactIds() async {
     final db = await init();
@@ -88,16 +199,14 @@ CREATE TABLE app_settings (
       where: 'is_selected = 1',
       orderBy: 'source_row ASC, id ASC',
     );
-    return rows
-        .map((row) => row['id'])
-        .whereType<int>()
-        .toSet();
+    return rows.map((row) => row['id']).whereType<int>().toSet();
   }
 
   Future<int> getSelectedContactsCount() async {
     final db = await init();
     return Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM contacts WHERE is_selected = 1'),
+          await db
+              .rawQuery('SELECT COUNT(*) FROM contacts WHERE is_selected = 1'),
         ) ??
         0;
   }
@@ -269,48 +378,51 @@ CREATE TABLE app_settings (
 
   Future<Map<String, int>> getStats() async {
     final db = await init();
-    final total = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM contacts'),
-        ) ??
-        0;
-    final valid = Sqflite.firstIntValue(
-          await db.rawQuery(
-            'SELECT COUNT(*) FROM contacts WHERE is_valid_phone = 1',
-          ),
-        ) ??
-        0;
-    final invalid = Sqflite.firstIntValue(
-          await db.rawQuery(
-            'SELECT COUNT(*) FROM contacts WHERE is_valid_phone = 0',
-          ),
-        ) ??
-        0;
-    final duplicates = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM contacts WHERE is_duplicate = 1'),
-        ) ??
-        0;
+    final rows = await db.rawQuery(
+      '''
+SELECT
+  COUNT(*) AS total,
+  SUM(CASE WHEN is_valid_phone = 1 THEN 1 ELSE 0 END) AS valid,
+  SUM(CASE WHEN is_valid_phone = 0 THEN 1 ELSE 0 END) AS invalid,
+  SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) AS duplicates,
+  SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS pending,
+  SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS sent,
+  SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS failed,
+  SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS invalid_status,
+  SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS duplicate_status,
+  SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS skipped
+FROM contacts
+''',
+      ContactStatus.values.map((status) => status.name).toList(),
+    );
+    final row = rows.isEmpty ? const <String, Object?>{} : rows.first;
     final stats = <String, int>{
-      'total': total,
-      'valid': valid,
-      'invalid': invalid,
-      'duplicates': duplicates,
+      'total': _aggregateInt(row['total']),
+      'valid': _aggregateInt(row['valid']),
+      'invalid': _aggregateInt(row['invalid']),
+      'duplicates': _aggregateInt(row['duplicates']),
+      ContactStatus.pending.name: _aggregateInt(row['pending']),
+      ContactStatus.sent.name: _aggregateInt(row['sent']),
+      ContactStatus.failed.name: _aggregateInt(row['failed']),
+      ContactStatus.invalid.name: _aggregateInt(row['invalid_status']),
+      ContactStatus.duplicate.name: _aggregateInt(row['duplicate_status']),
+      ContactStatus.skipped.name: _aggregateInt(row['skipped']),
     };
-    for (final status in ContactStatus.values) {
-      stats[status.name] = Sqflite.firstIntValue(
-            await db.rawQuery(
-              'SELECT COUNT(*) FROM contacts WHERE status = ?',
-              [status.name],
-            ),
-          ) ??
-          0;
-    }
     return stats;
+  }
+
+  int _aggregateInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return 0;
   }
 
   Future<AppSettings> getSettings() async {
     final db = await init();
     final rows = await db.query('app_settings', where: 'id = 1', limit: 1);
-    return rows.isEmpty ? AppSettings.defaults() : AppSettings.fromMap(rows.first);
+    return rows.isEmpty
+        ? AppSettings.defaults()
+        : AppSettings.fromMap(rows.first);
   }
 
   Future<void> saveSettings(AppSettings settings) async {
@@ -321,4 +433,11 @@ CREATE TABLE app_settings (
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
+}
+
+class _SqlWhere {
+  const _SqlWhere({required this.clause, required this.args});
+
+  final String? clause;
+  final List<Object?> args;
 }

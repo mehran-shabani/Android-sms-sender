@@ -82,7 +82,9 @@ class ImportSummary {
       validPhones: contacts.where((contact) => contact.isValidPhone).length,
       invalidPhones: contacts.where((contact) => !contact.isValidPhone).length,
       duplicates: contacts.where((contact) => contact.isDuplicate).length,
-      pending: contacts.where((contact) => contact.status == ContactStatus.pending).length,
+      pending: contacts
+          .where((contact) => contact.status == ContactStatus.pending)
+          .length,
     );
   }
 }
@@ -91,8 +93,10 @@ Map<String, Object?> readFirstWorksheetInIsolate(Uint8List bytes) {
   return ExcelService().readFirstWorksheet(bytes).toMap();
 }
 
-List<Map<String, Object?>> buildContactsInIsolate(Map<dynamic, dynamic> message) {
-  final data = ExcelImportData.fromMap(Map<String, Object?>.from(message['data'] as Map));
+List<Map<String, Object?>> buildContactsInIsolate(
+    Map<dynamic, dynamic> message) {
+  final data = ExcelImportData.fromMap(
+      Map<String, Object?>.from(message['data'] as Map));
   final mapping = ExcelColumnMapping.fromMap(
     Map<String, Object?>.from(message['mapping'] as Map),
   );
@@ -167,7 +171,9 @@ class ExcelService {
   ExcelColumnMapping detectMapping(List<String> headers) {
     int? find(Set<String> candidates) {
       for (var i = 0; i < headers.length; i++) {
-        if (candidates.map(normalizeHeader).contains(normalizeHeader(headers[i]))) {
+        if (candidates
+            .map(normalizeHeader)
+            .contains(normalizeHeader(headers[i]))) {
           return i;
         }
       }
@@ -198,7 +204,8 @@ class ExcelService {
       final rawPhone = _valueAt(row, mapping.phoneIndex);
       final phone = _phoneNormalizer.normalize(rawPhone);
       final isValidPhone = _phoneNormalizer.isValid(rawPhone);
-      final isDuplicate = isValidPhone && phone.isNotEmpty && !seenPhones.add(phone);
+      final isDuplicate =
+          isValidPhone && phone.isNotEmpty && !seenPhones.add(phone);
       final status = !isValidPhone
           ? ContactStatus.invalid
           : isDuplicate

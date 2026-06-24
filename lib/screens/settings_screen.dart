@@ -90,9 +90,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       helperText: 'از {token} برای نام مخاطب استفاده کنید.',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) => (value == null || value.trim().isEmpty)
-                        ? 'قالب پیامک الزامی است'
-                        : null,
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty)
+                            ? 'قالب پیامک الزامی است'
+                            : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -100,7 +101,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'فاصله بین ارسال‌ها (ثانیه)',
-                      helperText: 'در مرحله ارسال، بازه ۱۰ تا ۱۲۰ ثانیه اعمال می‌شود.',
+                      helperText:
+                          'در مرحله ارسال، بازه ۱۰ تا ۱۲۰ ثانیه اعمال می‌شود.',
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
@@ -116,7 +118,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SwitchListTile(
                     title: const Text('رد کردن مخاطبین تکراری'),
                     value: _skipDuplicates,
-                    onChanged: (value) => setState(() => _skipDuplicates = value),
+                    onChanged: (value) =>
+                        setState(() => _skipDuplicates = value),
                   ),
                   SwitchListTile(
                     title: const Text('رد کردن شماره‌های نامعتبر'),
