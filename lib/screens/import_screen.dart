@@ -41,7 +41,7 @@ class _ImportScreenState extends State<ImportScreen> {
         result.files.single.bytes!,
       );
       if (!mounted) return;
-      final data = ExcelImportData.fromMap(dataMap);
+      final data = ExcelImportData.fromMap(Map<String, Object?>.from(dataMap));
       final mapping = _excelService.detectMapping(data.headers);
       setState(() {
         _data = data;
