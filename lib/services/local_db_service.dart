@@ -9,14 +9,13 @@ class LocalDbService {
   static final LocalDbService instance = LocalDbService._();
 
   Database? _db;
-  final Set<int> _selectedContactIds = <int>{};
 
   Future<Database> init() async {
     if (_db != null) return _db!;
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       p.join(dbPath, 'android_sms_sender.db'),
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
 CREATE TABLE contacts (
@@ -37,7 +36,8 @@ CREATE TABLE contacts (
   delivered_at INTEGER,
   sms_part_count INTEGER NOT NULL,
   created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  updated_at INTEGER NOT NULL,
+  is_selected INTEGER NOT NULL DEFAULT 0
 )
 ''');
         await db.execute('''
@@ -51,6 +51,14 @@ CREATE TABLE app_settings (
 )
 ''');
         await db.insert('app_settings', AppSettings.defaults().toMap());
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE contacts '
+            'ADD COLUMN is_selected INTEGER NOT NULL DEFAULT 0',
+          );
+        }
       },
     );
     return _db!;
@@ -72,17 +80,51 @@ CREATE TABLE app_settings (
   }
 
 
-  Set<int> get selectedContactIds => Set.unmodifiable(_selectedContactIds);
-
-  void setContactSelected(int id, bool selected) {
-    if (selected) {
-      _selectedContactIds.add(id);
-    } else {
-      _selectedContactIds.remove(id);
-    }
+  Future<Set<int>> getSelectedContactIds() async {
+    final db = await init();
+    final rows = await db.query(
+      'contacts',
+      columns: ['id'],
+      where: 'is_selected = 1',
+      orderBy: 'source_row ASC, id ASC',
+    );
+    return rows
+        .map((row) => row['id'])
+        .whereType<int>()
+        .toSet();
   }
 
-  void clearSelectedContacts() => _selectedContactIds.clear();
+  Future<int> getSelectedContactsCount() async {
+    final db = await init();
+    return Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM contacts WHERE is_selected = 1'),
+        ) ??
+        0;
+  }
+
+  Future<void> setContactSelected(int id, bool selected) async {
+    final db = await init();
+    await db.update(
+      'contacts',
+      {
+        'is_selected': selected ? 1 : 0,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> clearSelectedContacts() async {
+    final db = await init();
+    await db.update(
+      'contacts',
+      {
+        'is_selected': 0,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+  }
 
   Future<List<ContactRecord>> getContactsByIds(Set<int> ids) async {
     if (ids.isEmpty) return const [];
@@ -100,7 +142,13 @@ CREATE TABLE app_settings (
   Future<List<ContactRecord>> getSelectedContacts({
     bool onlyPendingOrFailed = false,
   }) async {
-    final contacts = await getContactsByIds(_selectedContactIds);
+    final db = await init();
+    final rows = await db.query(
+      'contacts',
+      where: 'is_selected = 1',
+      orderBy: 'source_row ASC, id ASC',
+    );
+    final contacts = rows.map(ContactRecord.fromMap).toList();
     return _filterEligibleContacts(
       contacts,
       onlyPendingOrFailed: onlyPendingOrFailed,
@@ -184,7 +232,10 @@ CREATE TABLE app_settings (
 
   Future<void> clearContacts() async {
     final db = await init();
-    await db.delete('contacts');
+    await db.transaction((txn) async {
+      await txn.update('contacts', {'is_selected': 0});
+      await txn.delete('contacts');
+    });
   }
 
   Future<Map<String, int>> getStats() async {

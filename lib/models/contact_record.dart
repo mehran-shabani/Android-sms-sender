@@ -27,6 +27,7 @@ class ContactRecord {
     required this.message,
     required this.isValidPhone,
     required this.isDuplicate,
+    this.isSelected = false,
     required this.status,
     this.error,
     this.sentAt,
@@ -47,6 +48,7 @@ class ContactRecord {
   final String message;
   final bool isValidPhone;
   final bool isDuplicate;
+  final bool isSelected;
   final ContactStatus status;
   final String? error;
   final DateTime? sentAt;
@@ -68,6 +70,7 @@ class ContactRecord {
       message: map['message'] as String? ?? '',
       isValidPhone: (map['is_valid_phone'] as int? ?? 0) == 1,
       isDuplicate: (map['is_duplicate'] as int? ?? 0) == 1,
+      isSelected: (map['is_selected'] as int? ?? 0) == 1,
       status: ContactStatus.fromValue(map['status'] as String?),
       error: map['error'] as String?,
       sentAt: _dateFromMillis(map['sent_at'] as int?),
@@ -91,6 +94,7 @@ class ContactRecord {
       'message': message,
       'is_valid_phone': isValidPhone ? 1 : 0,
       'is_duplicate': isDuplicate ? 1 : 0,
+      'is_selected': isSelected ? 1 : 0,
       'status': status.name,
       'error': error,
       'sent_at': sentAt?.millisecondsSinceEpoch,
@@ -113,6 +117,7 @@ class ContactRecord {
     String? message,
     bool? isValidPhone,
     bool? isDuplicate,
+    bool? isSelected,
     ContactStatus? status,
     String? error,
     DateTime? sentAt,
@@ -133,6 +138,7 @@ class ContactRecord {
       message: message ?? this.message,
       isValidPhone: isValidPhone ?? this.isValidPhone,
       isDuplicate: isDuplicate ?? this.isDuplicate,
+      isSelected: isSelected ?? this.isSelected,
       status: status ?? this.status,
       error: error ?? this.error,
       sentAt: sentAt ?? this.sentAt,

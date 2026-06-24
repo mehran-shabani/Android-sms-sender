@@ -29,12 +29,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
   int? _filteredContactsCacheCount;
   ContactFilter? _filteredContactsCacheFilter;
   String? _filteredContactsCacheQuery;
-  final Set<int> _selectedIds = <int>{};
+  int _selectedCount = 0;
 
   @override
   void initState() {
     super.initState();
     _contactsFuture = LocalDbService.instance.getAllContacts();
+    _loadSelectedCount();
     _searchController.addListener(_onSearchChanged);
     SendQueueService.instance.addListener(_refresh);
   }
@@ -63,6 +64,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
     });
   }
 
+  Future<void> _loadSelectedCount() async {
+    final count = await LocalDbService.instance.getSelectedContactsCount();
+    if (!mounted) return;
+    setState(() => _selectedCount = count);
+  }
+
   void _refresh() {
     if (_refreshDebounce?.isActive ?? false) return;
 
@@ -73,7 +80,36 @@ class _ContactsScreenState extends State<ContactsScreen> {
       setState(() {
         _contactsFuture = LocalDbService.instance.getAllContacts();
       });
+      _loadSelectedCount();
     });
+  }
+
+  Future<void> _setContactSelected(ContactRecord contact, bool selected) async {
+    final id = contact.id;
+    if (id == null || selected == contact.isSelected) return;
+
+    setState(() {
+      _contactsFuture = _contactsFuture.then((contacts) {
+        return contacts
+            .map((item) => item.id == id
+                ? item.copyWith(isSelected: selected)
+                : item)
+            .toList();
+      });
+      _selectedCount += selected ? 1 : -1;
+      if (_selectedCount < 0) _selectedCount = 0;
+    });
+
+    try {
+      await LocalDbService.instance.setContactSelected(id, selected);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _contactsFuture = LocalDbService.instance.getAllContacts();
+      });
+      await _loadSelectedCount();
+      rethrow;
+    }
   }
 
   List<ContactRecord> _applyFilters(List<ContactRecord> contacts) {
@@ -167,9 +203,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Expanded(child: Text('انتخاب‌شده: ${_selectedIds.length}')),
+                Expanded(child: Text('انتخاب‌شده: $_selectedCount')),
                 TextButton(
-                  onPressed: _selectedIds.isEmpty
+                  onPressed: _selectedCount == 0
                       ? null
                       : () => Navigator.push(
                             context,
@@ -213,24 +249,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
                           ? contact.fullName
                           : '${contact.firstName} ${contact.lastName}'.trim();
                       final id = contact.id;
-                      final selected = id != null && _selectedIds.contains(id);
+                      final selected = contact.isSelected;
                       return Card(
                         child: CheckboxListTile(
                           value: selected,
                           onChanged: id == null
                               ? null
                               : (value) {
-                                  setState(() {
-                                    if (value ?? false) {
-                                      _selectedIds.add(id);
-                                    } else {
-                                      _selectedIds.remove(id);
-                                    }
-                                    LocalDbService.instance.setContactSelected(
-                                      id,
-                                      value ?? false,
-                                    );
-                                  });
+                                  _setContactSelected(contact, value ?? false);
                                 },
                           title: Text(displayName.isEmpty ? 'بدون نام' : displayName),
                           subtitle: Column(
